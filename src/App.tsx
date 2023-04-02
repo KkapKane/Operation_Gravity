@@ -1,5 +1,6 @@
 import Canvas from "./Components/Canvas"
-
+import { ReactP5Wrapper } from "react-p5-wrapper"
+import Sketch from "./Components/Sketch"
 
 
 function App() {
