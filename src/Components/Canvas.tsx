@@ -48,9 +48,9 @@ export default function Canvas() {
     {
       name: "UnitedStates",
       img: UnitedStates,
-      initialPosition: { x: 800, y: 400 },
+      initialPosition: { x: 700, y: 300 },
     },
-    { name: "China", img: China, initialPosition: { x: 500, y: 100 } },
+    { name: "China", img: China, initialPosition: { x: 500, y: 300 } },
     { name: "Japan", img: Japan, initialPosition: { x: 600, y: 100 } },
     { name: "Germany", img: Germany, initialPosition: { x: 400, y: 200 } },
     { name: "India", img: India, initialPosition: { x: 900, y: 300 } },
@@ -98,7 +98,7 @@ export default function Canvas() {
   const engine = useRef(Engine.create());
   const runner = useRef(Runner.create());
 
-  var Gravity = 40;
+  var Gravity = 100;
 
   useEffect(() => {
     //render runs continuously
@@ -121,7 +121,7 @@ export default function Canvas() {
     world.gravity.scale = 0;
     engine.current.timing.timeScale = 1;
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < countries.length; i++) {
       new CountryBall(
         countries[i].name,
         countries[i].initialPosition.x,
@@ -140,136 +140,111 @@ export default function Canvas() {
     return cleanup;
   }, []);
 
-  function setMagnitude(vector: { x: number; y: number }, magnitude: number) {
-    // Calculate the current magnitude of the vector
-    const currentMagnitude = Math.sqrt(vector.x ** 2 + vector.y ** 2);
-
-    // Scale the vector's components by the ratio of the desired magnitude to the current magnitude
-    const scaleRatio = magnitude / currentMagnitude;
-    const scaledVector = {
-      x: vector.x * scaleRatio,
-      y: vector.y * scaleRatio,
-    };
-
-    return scaledVector;
+  // Find the country object in the bodiesArray
+  function findCountryObject(
+    country: string,
+    bodiesArray: Body[]
+  ): Body | undefined {
+    return bodiesArray.find((o) => o.label === country);
   }
 
-  const addForce = (country: string) => {
-    let bodiesArray = engine.current.world.bodies;
-
+  // Find the body with the biggest radius in the bodiesArray
+  function findBiggestRadiusBody(bodiesArray: Body[]): Body | undefined {
     let biggestRadius = bodiesArray[0];
-    let countryObject = bodiesArray.find((o) => o.label === country);
-    if (!countryObject) return;
-
-    // sets all the bodies static to false at the beginning of the function
-    for (let i = 0; i < bodiesArray.length; i++) {
-      Body.setStatic(bodiesArray[i], false);
-    }
-
-    // makes the ball's body and sprite scale up 1.5
-    scaleCountryBall(countryObject);
-
-    // finds the body with the biggest radius
-    if (!biggestRadius.circleRadius) return;
     for (let i = 0; i < bodiesArray.length; i++) {
       if (biggestRadius.circleRadius <= bodiesArray[i].circleRadius) {
+        if (biggestRadius !== bodiesArray[i]) {
+          // Remove gravitational force from old biggestRadius
+          const oldAttractorIndex = biggestRadius.plugin.attractors.indexOf(
+            applyUniversalGravitation
+          );
+          if (oldAttractorIndex !== -1) {
+            biggestRadius.plugin.attractors.splice(oldAttractorIndex, 1);
+          }
+          // Turn on collisions for the old biggestRadius body
+          biggestRadius.collisionFilter = {};
+        }
         biggestRadius = bodiesArray[i];
+      } else {
+        // Turn on collisions for other bodies
+        bodiesArray[i].collisionFilter = {};
       }
     }
-    console.log(biggestRadius);
 
-    // sets the body with biggest radius to static position
+    return biggestRadius;
+  }
 
+  // Update the position of the bodies based on the new center
+  function updateBodiesPosition(
+    newCenter: Vector,
+    biggestRadius: Body,
+    bodiesArray: Body[]
+  ) {
+    const displacement = Vector.sub(newCenter, biggestRadius.position);
     for (let i = 0; i < bodiesArray.length; i++) {
       if (bodiesArray[i] == biggestRadius) {
-        // Body.setStatic(bodiesArray[i], true)
-        Body.setPosition(bodiesArray[i], Vector.create(800, 400));
+        Body.setPosition(bodiesArray[i], newCenter);
       } else {
-        Body.setStatic(bodiesArray[i], false);
+        bodiesArray[i].plugin.attractors.pop();
+        const newPosition = Vector.add(bodiesArray[i].position, displacement);
+        Body.setPosition(bodiesArray[i], newPosition);
       }
     }
-
-    console.log(engine.current.world.bodies);
-
-    // let universalGravitation = function (bodyA: Body, bodyB: Body) {
-    //   let r = Matter.Vector.magnitude(
-    //     Matter.Vector.sub(bodyA.position, bodyB.position)
-    //   );
-
-    //   let f = Matter.Vector.sub(bodyB.position, bodyA.position);
-    //   let forceMagnitude = (Gravity * bodyA.mass * bodyB.mass) / (r * r);
-    //   let force = Matter.Vector.mult(
-    //     Matter.Vector.normalise(f),
-    //     forceMagnitude
-    //   );
-    //   Body.applyForce(bodyA, bodyA.position, force);
-
-    // };
-    // if (countryObject)
-    // // pushing universalGravitation function into the specific ball's attractor array
-    //   countryObject.plugin.attractors.push(universalGravitation);
-  };
-
-  function orbit(country: string) {
-    let bodiesArray = engine.current.world.bodies;
-    let biggestRadius = bodiesArray[0];
-    let countryObject = bodiesArray.find((o) => o.label === country);
-
-    // sets all the bodies static to false at the beginning of the function
-    for (let i = 0; i < bodiesArray.length; i++) {
-      Body.setStatic(bodiesArray[i], false);
-    }
-
-    scaleCountryBall(countryObject);
-
-    // finds the body with the biggest radius
-    if (!biggestRadius.circleRadius) return;
-    for (let i = 0; i < bodiesArray.length; i++) {
-      if (biggestRadius.circleRadius <= bodiesArray[i].circleRadius) {
-        biggestRadius = bodiesArray[i];
-      }
-    }
-
-    console.log(biggestRadius);
-
-    // sets the body with biggest radius to static position
-
-    // for (let i = 0; i < bodiesArray.length; i++) {
-    //   if (bodiesArray[i] == biggestRadius) {
-    //     Body.setStatic(bodiesArray[i], true);
-    //     Body.setPosition(bodiesArray[i], Vector.create(800, 400));
-    //   } else {
-    //     Body.setStatic(bodiesArray[i], false);
-    //   }
-    // }
-
-    let universalGravitation = function (bodyA: Body, bodyB: Body) {
-      const r = Matter.Vector.magnitude(
-        Matter.Vector.sub(bodyA.position, bodyB.position)
-      );
-      const f = Matter.Vector.sub(bodyA.position, bodyB.position);
-      const forceMagnitude = (Gravity * bodyA.mass * bodyB.mass) / (r * r);
-      const force = Matter.Vector.mult(
-        Matter.Vector.normalise(f),
-        forceMagnitude
-      );
-
-      // Calculate the initial velocity required for circular orbit
-      const v = Math.sqrt((Gravity * bodyA.mass) / r);
-      const v_tan = Matter.Vector.rotate(f, Math.PI / 2);
-      const velocity = Matter.Vector.mult(Matter.Vector.normalise(v_tan), v);
-      Matter.Body.setVelocity(bodyB, velocity);
-      Body.setPosition(bodyA, Matter.Vector.create(800, 400));
-
-      //  Matter.Body.applyForce(bodyB, bodyB.position, force);
-      Matter.Body.applyForce(bodyA, bodyA.position, Matter.Vector.neg(force));
-    };
-    if (countryObject)
-      countryObject.plugin.attractors.push(universalGravitation);
-    if (countryObject)
-      countryObject.plugin.attractors.push(universalGravitation);
   }
 
+  // Apply the universal gravitation force between bodies
+  function applyUniversalGravitation(bodyA: Body, bodyB: Body) {
+    const r = Matter.Vector.magnitude(
+      Matter.Vector.sub(bodyA.position, bodyB.position)
+    );
+    const f = Matter.Vector.sub(bodyA.position, bodyB.position);
+    const oldMass = bodyA.mass;
+    const v = Math.sqrt((Gravity * oldMass) / r);
+    // 90deg angular velocity
+    const v_tan = Matter.Vector.rotate(f, Math.PI / 2);
+    const velocity = Matter.Vector.mult(Matter.Vector.normalise(v_tan), v);
+    Matter.Body.setVelocity(bodyB, velocity);
+  }
+
+  // Main function
+ function orbit(country: string) {
+   const bodiesArray = engine.current.world.bodies;
+   const countryObject = findCountryObject(country, bodiesArray);
+   if (!countryObject) return;
+   scaleCountryBall(countryObject);
+
+   const biggestRadius = findBiggestRadiusBody(bodiesArray);
+   if (!biggestRadius || !biggestRadius.circleRadius) return;
+
+   // Turn off collisions for the biggestRadius body
+   biggestRadius.collisionFilter = {
+     group: -1,
+     category: -1,
+   };
+
+   const newCenter = Vector.create(800, 400);
+   updateBodiesPosition(newCenter, biggestRadius, bodiesArray);
+
+   // Add gravitational force to new biggestRadius
+   const attractorIndex = biggestRadius.plugin.attractors.indexOf(
+     applyUniversalGravitation
+   );
+   if (attractorIndex === -1) {
+     biggestRadius.plugin.attractors.push(applyUniversalGravitation);
+   }
+
+   // Turn off gravitational force for other bodies
+   for (let i = 0; i < bodiesArray.length; i++) {
+     if (bodiesArray[i] !== biggestRadius) {
+       const attractorIndex = bodiesArray[i].plugin.attractors.indexOf(
+         applyUniversalGravitation
+       );
+       if (attractorIndex !== -1) {
+         bodiesArray[i].plugin.attractors.splice(attractorIndex, 1);
+       }
+     }
+   }
+ }
   function scaleCountryBall(countryObject) {
     if (!countryObject) return;
     Body.scale(countryObject, 1.5, 1.5);
@@ -291,10 +266,10 @@ export default function Canvas() {
       }}
     >
       <canvas ref={canvasRef} />
-      <button onClick={() => addForce("India")}>India</button>
-      <button onClick={() => addForce("Russia")}>Russia</button>
-      <button onClick={() => orbit("Japan")}>Japan</button>
+      <button onClick={() => orbit("India")}>India</button>
       <button onClick={() => orbit("UnitedStates")}>USA</button>
+      <button onClick={() => orbit("Japan")}>Japan</button>
+      <button onClick={() => orbit("China")}>China</button>
     </div>
   );
 }
