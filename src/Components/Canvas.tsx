@@ -98,7 +98,7 @@ export default function Canvas() {
   const engine = useRef(Engine.create());
   const runner = useRef(Runner.create());
 
-  var Gravity = 100;
+  var Gravity = 50;
 
   useEffect(() => {
     //render runs continuously
@@ -262,7 +262,7 @@ export default function Canvas() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "blue",
+       
       }}
     >
       <canvas ref={canvasRef} />
