@@ -1,13 +1,4 @@
-import Matter, {
-  Bodies,
-  Body,
-  Engine,
-  Render,
-  Runner,
-  Vector,
-  World,
-} from "matter-js";
-import * as p5 from "p5";
+import Matter, { Body, Engine, Render, Runner, Vector } from "matter-js";
 import UnitedStates from "../assets/UnitedStates.svg";
 import China from "../assets/China.svg";
 import Japan from "../assets/Japan.svg";
@@ -41,7 +32,7 @@ import { useRef, useEffect } from "react";
 
 import { CountryBall } from "../Classes/Country";
 
-export default function Canvas() {
+export default function Gravity() {
   Matter.use(MatterAttractorsF);
 
   let countries = [
@@ -121,7 +112,7 @@ export default function Canvas() {
     world.gravity.scale = 0;
     engine.current.timing.timeScale = 1;
 
-    for (let i = 0; i < countries.length; i++) {
+    for (let i = 0; i < 5; i++) {
       new CountryBall(
         countries[i].name,
         countries[i].initialPosition.x,
@@ -152,6 +143,7 @@ export default function Canvas() {
   function findBiggestRadiusBody(bodiesArray: Body[]): Body | undefined {
     let biggestRadius = bodiesArray[0];
     for (let i = 0; i < bodiesArray.length; i++) {
+      //@ts-expect-error
       if (biggestRadius.circleRadius <= bodiesArray[i].circleRadius) {
         if (biggestRadius !== bodiesArray[i]) {
           // Remove gravitational force from old biggestRadius
@@ -207,45 +199,45 @@ export default function Canvas() {
   }
 
   // Main function
- function orbit(country: string) {
-   const bodiesArray = engine.current.world.bodies;
-   const countryObject = findCountryObject(country, bodiesArray);
-   if (!countryObject) return;
-   scaleCountryBall(countryObject);
+  function orbit(country: string) {
+    const bodiesArray = engine.current.world.bodies;
+    const countryObject = findCountryObject(country, bodiesArray);
+    if (!countryObject) return;
+    scaleCountryBall(countryObject);
 
-   const biggestRadius = findBiggestRadiusBody(bodiesArray);
-   if (!biggestRadius || !biggestRadius.circleRadius) return;
+    const biggestRadius = findBiggestRadiusBody(bodiesArray);
+    if (!biggestRadius || !biggestRadius.circleRadius) return;
 
-   // Turn off collisions for the biggestRadius body
-   biggestRadius.collisionFilter = {
-     group: -1,
-     category: -1,
-   };
+    // Turn off collisions for the biggestRadius body
+    biggestRadius.collisionFilter = {
+      group: -1,
+      category: -1,
+    };
 
-   const newCenter = Vector.create(800, 400);
-   updateBodiesPosition(newCenter, biggestRadius, bodiesArray);
+    const newCenter = Vector.create(800, 400);
+    updateBodiesPosition(newCenter, biggestRadius, bodiesArray);
 
-   // Add gravitational force to new biggestRadius
-   const attractorIndex = biggestRadius.plugin.attractors.indexOf(
-     applyUniversalGravitation
-   );
-   if (attractorIndex === -1) {
-     biggestRadius.plugin.attractors.push(applyUniversalGravitation);
-   }
+    // Add gravitational force to new biggestRadius
+    const attractorIndex = biggestRadius.plugin.attractors.indexOf(
+      applyUniversalGravitation
+    );
+    if (attractorIndex === -1) {
+      biggestRadius.plugin.attractors.push(applyUniversalGravitation);
+    }
 
-   // Turn off gravitational force for other bodies
-   for (let i = 0; i < bodiesArray.length; i++) {
-     if (bodiesArray[i] !== biggestRadius) {
-       const attractorIndex = bodiesArray[i].plugin.attractors.indexOf(
-         applyUniversalGravitation
-       );
-       if (attractorIndex !== -1) {
-         bodiesArray[i].plugin.attractors.splice(attractorIndex, 1);
-       }
-     }
-   }
- }
-  function scaleCountryBall(countryObject) {
+    // Turn off gravitational force for other bodies
+    for (let i = 0; i < bodiesArray.length; i++) {
+      if (bodiesArray[i] !== biggestRadius) {
+        const attractorIndex = bodiesArray[i].plugin.attractors.indexOf(
+          applyUniversalGravitation
+        );
+        if (attractorIndex !== -1) {
+          bodiesArray[i].plugin.attractors.splice(attractorIndex, 1);
+        }
+      }
+    }
+  }
+  function scaleCountryBall(countryObject: any) {
     if (!countryObject) return;
     Body.scale(countryObject, 1.5, 1.5);
     if (!countryObject.render.sprite) return;
@@ -262,7 +254,6 @@ export default function Canvas() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-       
       }}
     >
       <canvas ref={canvasRef} />

@@ -1,6 +1,4 @@
-
 import { Bodies, Body, World } from "matter-js";
-
 
 export class CountryBall {
   name: string;
@@ -28,8 +26,8 @@ export class CountryBall {
     this.body = Bodies.circle(posX, posY, r, {
       isStatic: false,
       label: this.name,
-      collisionFilter:{ 
-        mask: 1
+      collisionFilter: {
+        mask: 1,
       },
       render: {
         sprite: {
@@ -41,6 +39,4 @@ export class CountryBall {
     });
     World.add(world, this.body);
   }
-
- 
 }
